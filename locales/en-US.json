@@ -488,5 +488,11 @@
     "channel_tab_releases_label": "Releases",
     "channel_tab_playlists_label": "Playlists",
     "channel_tab_community_label": "Community",
-    "channel_tab_channels_label": "Channels"
+    "channel_tab_channels_label": "Channels",
+    "video_quality_livestream_label": "Livestreams",
+    "video_quality_hls_label": "HLS",
+    "video_quality_dash_label": "DASH",
+    "video_quality_hd720_label": "hd720",
+    "video_quality_medium_label": "medium",
+    "video_quality_small_label": "small"
 }
