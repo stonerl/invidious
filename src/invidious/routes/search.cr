@@ -5,7 +5,7 @@ module Invidious::Routes::Search
   def self.ensure_authenticated(env)
     if CONFIG.private_instance && !env.get?("user")
       env.response.headers["Location"] = "/login"
-      halt env, status_code: 302
+      haltf env, status_code: 302
     end
   end
 

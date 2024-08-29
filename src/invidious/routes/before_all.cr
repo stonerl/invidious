@@ -38,7 +38,7 @@ module Invidious::Routes::BeforeAll
       # Redirect to login if the user is not authenticated
       unless env.get?("user")
         env.response.headers["Location"] = "/login"
-        halt env, status_code: 302
+        haltf env, status_code: 302
       end
     end
 
