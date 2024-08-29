@@ -1,7 +1,17 @@
 {% skip_file if flag?(:api_only) %}
 
 module Invidious::Routes::Search
+  # Helper method to check if the user is authenticated on a private instance
+  def self.ensure_authenticated(env)
+    if CONFIG.private_instance && !env.get?("user")
+      env.response.headers["Location"] = "/login"
+      halt env, status_code: 302
+    end
+  end
+
   def self.opensearch(env)
+    ensure_authenticated(env) # Check authentication
+
     locale = env.get("preferences").as(Preferences).locale
     env.response.content_type = "application/opensearchdescription+xml"
 
@@ -18,6 +28,8 @@ module Invidious::Routes::Search
   end
 
   def self.results(env)
+    ensure_authenticated(env) # Check authentication
+
     locale = env.get("preferences").as(Preferences).locale
 
     query = env.params.query["search_query"]?
@@ -37,6 +49,8 @@ module Invidious::Routes::Search
   end
 
   def self.search(env)
+    ensure_authenticated(env) # Check authentication
+
     prefs = env.get("preferences").as(Preferences)
     locale = prefs.locale
 
@@ -85,6 +99,8 @@ module Invidious::Routes::Search
   end
 
   def self.hashtag(env : HTTP::Server::Context)
+    ensure_authenticated(env) # Check authentication
+
     locale = env.get("preferences").as(Preferences).locale
 
     hashtag = env.params.url["hashtag"]?
