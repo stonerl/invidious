@@ -2,6 +2,46 @@ module Invidious::Routes::BeforeAll
   def self.handle(env)
     preferences = Preferences.from_json("{}")
 
+    # Blacklisted routes that should not be processed
+    blacklisted_routes = [
+      "/sb/",
+      "/vi/",
+      "/s_p/",
+      "/yts/",
+      "/ggpht/",
+      "/download",
+      "/licenses",
+      "/api/manifest/",
+      "/videoplayback",
+      "/latest_version",
+      "/opensearch.xml",
+    ]
+
+    # TODO: popular and trending are whitelisted for clients that require these endpoints to be accessible.
+    # e.g. Clipious. Can be removed as soon as those clients can handele these request on private instances
+
+    # Whitelisted paths for unregistered users
+    unregistered_path_whitelist = {
+      "/login",
+      "/privacy",
+      "/api/v1/stats",
+      "/api/v1/popular",
+      "/api/v1/trending",
+      "/feed/webhook/v1:",
+      "/api/v1/videos/dQw4w9WgXcQ",
+      "/api/v1/comments/jNQXAC9IVRw",
+    }
+
+    if CONFIG.private_instance &&
+       (!env.get?("user") && !unregistered_path_whitelist.any? { |r| env.request.path.starts_with? r }) ||
+       (blacklisted_routes.any? { |r| env.request.resource.starts_with? r })
+      # Redirect to login if the user is not authenticated
+      unless env.get?("user")
+        env.response.headers["Location"] = "/login"
+        halt env, status_code: 302
+      end
+    end
+
     begin
       if prefs_cookie = env.request.cookies["PREFS"]?
         preferences = Preferences.from_json(URI.decode_www_form(prefs_cookie.value))
@@ -87,38 +127,6 @@ module Invidious::Routes::BeforeAll
         env.set "user", user
       end
     end
-
-    # TODO: popular and trending are whitelisted for clients that require these endpoints to be accessible e.g. Clipious
-    # can be removed as soon as those clients can handele these request on private instances
-    unregistered_path_whitelist = {
-      "/login",
-      "/privacy",
-      "/api/v1/stats",
-      "/api/v1/popular",
-      "/api/v1/trending",
-      "/feed/webhook/v1:",
-      "/api/v1/videos/dQw4w9WgXcQ",
-      "/api/v1/comments/jNQXAC9IVRw",
-    }
-
-    if CONFIG.private_instance && !env.get?("user") && !unregistered_path_whitelist.any? { |r| env.request.path.starts_with? r }
-      env.response.headers["Location"] = "/login"
-      haltf env, status_code: 302
-    end
-
-    return if {
-                "/sb/",
-                "/vi/",
-                "/s_p/",
-                "/yts/",
-                "/ggpht/",
-                "/download",
-                "/licenses",
-                "/api/manifest/",
-                "/videoplayback",
-                "/latest_version",
-                "/opensearch.xml",
-              }.any? { |r| env.request.resource.starts_with? r }
 
     dark_mode = convert_theme(env.params.query["dark_mode"]?) || preferences.dark_mode.to_s
     thin_mode = env.params.query["thin_mode"]? || preferences.thin_mode.to_s
